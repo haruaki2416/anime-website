@@ -8,9 +8,9 @@ import EpisodesContainer from "./components/AnimeEpisodesContainer";
 import MangaChaptersContainer from "./components/MangaChaptersContainer";
 import ScoreRating from "@/app/components/DynamicAssets/ScoreRating";
 import { headers } from "next/headers";
+import { notFound } from "next/navigation";
 import { checkDeviceIsMobile } from "@/app/lib/checkMobileOrDesktop";
 import { convertFromUnix, getMediaReleaseDate } from "@/app/lib/formatDateUnix";
-import { getMediaInfoOnIMDB } from "@/app/api/consumet/consumetImdb";
 import { ImdbEpisode, ImdbMediaInfo } from "@/app/ts/interfaces/imdb";
 import MediaRelatedContainer from "./components/MediaRelatedContainer";
 import PageHeading from "./components/PageHeading";
@@ -18,26 +18,32 @@ import Reviews from "./components/Reviews";
 import { getMediaInfo } from "@/app/api/mediaInfo/anilist/mediaInfo";
 
 export async function generateMetadata({ params }: { params: { id: number } }) {
-  const mediaData = await getMediaInfo({
-    id: params.id,
-    accessToken: headers().get("Authorization")?.slice(7),
-  });
+  try {
+    const mediaData = await getMediaInfo({
+      id: params.id,
+      accessToken: headers().get("Authorization")?.slice(7),
+    });
 
-  return {
-    title: `${mediaData.title.romaji || mediaData.title.native} | AniProject`,
-    description:
-      mediaData.description ||
-      `See more info about ${mediaData.title.romaji || mediaData.title.native}`,
-    keywords: [
-      mediaData.title.romaji,
-      mediaData.title.english,
-      mediaData.title.native,
-      `${mediaData.title.romaji} anime`,
-      `${mediaData.title.romaji} release`,
-      `${mediaData.title.english} release`,
-      "anime info",
-    ],
-  };
+    if (!mediaData?.title) return { title: "Anime details | AniProject" };
+
+    return {
+      title: `${mediaData.title.romaji || mediaData.title.native} | AniProject`,
+      description:
+        mediaData.description ||
+        `See more info about ${mediaData.title.romaji || mediaData.title.native}`,
+      keywords: [
+        mediaData.title.romaji,
+        mediaData.title.english,
+        mediaData.title.native,
+        `${mediaData.title.romaji} anime`,
+        `${mediaData.title.romaji} release`,
+        `${mediaData.title.english} release`,
+        "anime info",
+      ],
+    };
+  } catch {
+    return { title: "Anime details | AniProject" };
+  }
 }
 
 export default async function MediaPage({
@@ -52,14 +58,12 @@ export default async function MediaPage({
   const mediaInfo = (await getMediaInfo({
     id: params.id,
     accessToken: headers().get("Authorization")?.slice(7),
-  })) as MediaDataFullInfo;
+  })) as MediaDataFullInfo | null;
 
-  // GET MEDIA INFO ON IMDB
-  const imdbMediaInfo = (await getMediaInfoOnIMDB({
-    search: true,
-    seachTitle: mediaInfo.title.romaji,
-    releaseYear: mediaInfo.startDate.year,
-  })) as ImdbMediaInfo;
+  if (!mediaInfo?.title) notFound();
+
+  // IMDb/third-party metadata is optional; AniList remains the source of truth.
+  const imdbMediaInfo = null as unknown as ImdbMediaInfo;
 
   function getCrunchyrollEpisodes() {
     const sortEpisodesByEpisode = mediaInfo.streamingEpisodes?.sort((a, b) => {
