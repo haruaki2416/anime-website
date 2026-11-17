@@ -75,33 +75,28 @@ export default async function Home() {
     })) || [];
 
   // section 3
-  const listMediasToBannerSection = ((await anilist
-    .getMediaForThisFormat({
-      type: "ANIME",
-      sort: "SCORE_DESC",
-      accessToken: userAuthorization,
-    })
-    .then((res) =>
-      ((res as MediaData[]) || []).filter((item) => item.isAdult == false)
-    )) || [];
+  const bannerMediaResult = await anilist.getMediaForThisFormat({
+    type: "ANIME",
+    sort: "SCORE_DESC",
+    accessToken: userAuthorization,
+  });
+  const listMediasToBannerSection = ((bannerMediaResult as MediaData[]) || [])
+    .filter((item) => item.isAdult == false);
 
   const randomIndexForBannerSection =
     Math.floor(Math.random() * listMediasToBannerSection.length);
 
   // section 4 data
-  const listMediasReleasedToday = ((await anilist
-    .getReleasingByDaysRange({
-      type: "ANIME",
-      days: 0,
-      perPage: 11,
-      accessToken: userAuthorization,
-    })
-    .then((res) =>
-      ((res as AiringMediaResult[]) || [])
-        .sort((a, b) => a.media.popularity - b.media.popularity)
-        .reverse()
-    )
-    .then((res) => res.map((item) => item.media))) || [];
+  const releasedTodayResult = await anilist.getReleasingByDaysRange({
+    type: "ANIME",
+    days: 0,
+    perPage: 11,
+    accessToken: userAuthorization,
+  });
+  const listMediasReleasedToday = ((releasedTodayResult as AiringMediaResult[]) || [])
+    .sort((a, b) => a.media.popularity - b.media.popularity)
+    .reverse()
+    .map((item) => item.media);
 
   return (
     <main id={styles.container} className={styles.main}>
