@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const dotenv = require("dotenv");
+dotenv.config();
 const redis = require("redis");
 const { ensureSchema } = require("./db");
 const authRoute = require("./routes/authRoute");
@@ -14,7 +15,6 @@ const mediaEpisodesRoute = require("./routes/mediaEpisodesRoute");
 const imdbRoute = require("./routes/imdbRoute");
 const mediaChaptersRoute = require("./routes/mediaChaptersRoute");
 
-dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 1234;
