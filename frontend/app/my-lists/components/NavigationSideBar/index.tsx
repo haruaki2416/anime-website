@@ -2,12 +2,8 @@
 import Link from "next/link";
 import React, { useLayoutEffect, useState } from "react";
 import styles from "./component.module.css";
-import { getAuth } from "firebase/auth";
-import { useAuthState } from "react-firebase-hooks/auth";
-import { doc, getDoc, getFirestore } from "firebase/firestore";
-import { initFirebase } from "@/app/firebaseApp";
+import { useAuth } from "@/app/lib/auth/AuthProvider";
 import { useAppSelector } from "@/app/lib/redux/hooks";
-import { ListItemOnMediasSaved } from "@/app/ts/interfaces/firestoreData";
 import { MediaData } from "@/app/ts/interfaces/anilistMediaData";
 import { AnimatePresence, motion } from "framer-motion";
 import SvgFilter from "@/public/assets/funnel.svg";
@@ -64,74 +60,36 @@ function NavigationSideBar({
 
   const anilistUser = useAppSelector((state) => state.UserInfo?.value);
 
-  const auth = getAuth();
-  const [user, loading] = useAuthState(auth);
-
-  const db = getFirestore(initFirebase());
+  const { user, loading } = useAuth();
 
   useLayoutEffect(() => {
-    if (!loading && (user || anilistUser)) getUserLists();
-
+    if (!loading) {
+      const data = user?.data || {};
+      const savedLists = data.mediaListSavedByStatus || {};
+      const keepWatching = data.keepWatching || {};
+      const keepWatchingItems = Array.isArray(keepWatching)
+        ? keepWatching
+        : Object.values(keepWatching);
+      const count = (status: string) =>
+        Array.isArray(savedLists[status]) ? savedLists[status].length : 0;
+      const quantities = {
+        all: 0,
+        completed: count("completed"),
+        planning: count("planning"),
+        current: count("current"),
+        dropped: count("dropped"),
+        paused: count("paused"),
+        repeating: count("repeating"),
+        keepWatching: keepWatchingItems.filter((item: any) =>
+          Array.isArray(item) ? item.length > 0 : Boolean(item)
+        ).length,
+      };
+      quantities.all = quantities.completed + quantities.planning +
+        quantities.current + quantities.dropped + quantities.paused + quantities.repeating;
+      setMediasQuantity(quantities);
+    }
     setCurrParams(params?.type || "");
   }, [loading, user, anilistUser, params]);
-
-  async function getUserLists() {
-    const userDoc = await getDoc(
-      doc(db, "users", user?.uid || `${anilistUser?.id}`)
-    ).then((doc) => doc.data());
-
-    const keepWatchingListFromObjectToArray = Object.keys(
-      userDoc!.keepWatching as []
-    ).map((key) => {
-      return userDoc!.keepWatching[key];
-    });
-
-    const keepWatchingList = keepWatchingListFromObjectToArray.filter(
-      (item) => item.length != 0 && item
-    );
-    const activityLists: { name: string; medias: ListItemOnMediasSaved[] }[] =
-      [];
-
-    Object.keys(userDoc!.mediaListSavedByStatus)?.map((list) =>
-      activityLists.push({
-        name: list,
-        medias: userDoc!.mediaListSavedByStatus[list],
-      })
-    );
-
-    const mediasQuantityFiltered = {
-      all: 0,
-      completed:
-        activityLists?.find((list) => list.name == "completed")?.medias
-          .length || 0,
-      planning:
-        activityLists?.find((list) => list.name == "planning")?.medias.length ||
-        0,
-      current:
-        activityLists?.find((list) => list.name == "current")?.medias.length ||
-        0,
-      dropped:
-        activityLists?.find((list) => list.name == "dropped")?.medias.length ||
-        0,
-      paused:
-        activityLists?.find((list) => list.name == "paused")?.medias.length ||
-        0,
-      repeating:
-        activityLists?.find((list) => list.name == "repeating")?.medias
-          .length || 0,
-      keepWatching: keepWatchingList.length,
-    };
-
-    mediasQuantityFiltered.all =
-      mediasQuantityFiltered.completed +
-      mediasQuantityFiltered.current +
-      mediasQuantityFiltered.dropped +
-      mediasQuantityFiltered.paused +
-      mediasQuantityFiltered.planning +
-      mediasQuantityFiltered.repeating;
-
-    setMediasQuantity(mediasQuantityFiltered);
-  }
 
   return (
     <React.Fragment>
