@@ -11,9 +11,7 @@ const searchRoute = require("./routes/searchRoute");
 const mediaInfoRoute = require("./routes/mediaInfoRoute");
 const mediasByParamsRoute = require("./routes/mediasByParamsRoute");
 const newsRoute = require("./routes/newsRoute");
-const mediaEpisodesRoute = require("./routes/mediaEpisodesRoute");
 const imdbRoute = require("./routes/imdbRoute");
-const mediaChaptersRoute = require("./routes/mediaChaptersRoute");
 
 
 const app = express();
@@ -67,8 +65,6 @@ app.use("/auth", authRoute);
 app.use("/search", searchRoute);
 app.use("/media-info", mediaInfoRoute);
 app.use("/medias", mediasByParamsRoute);
-app.use("/episodes", mediaEpisodesRoute);
-app.use("/chapters", mediaChaptersRoute);
 app.use("/news", newsRoute);
 app.use("/imdb", imdbRoute);
 
