@@ -45,7 +45,7 @@ exports.mediasByParamsOnAnilist = expressAsyncHandler(async (req, res) => {
 
         let results = null
 
-        const key = `medias:${type.toLowerCase()}:anilist:page-${page}:per-page-${perPage}:format-${format.toLowerCase()}:type-${type.toLowerCase()}:status-${status?.toLowerCase()}:sort-${sort?.toLowerCase()}:releasedOnLastXDays-${releasedOnLastXDays}:season-${season?.toLowerCase()}:seasonYear-${seasonYear}:showAdultContent-${showAdultContent}`;
+        const key = `v2:medias:${type.toLowerCase()}:anilist:page-${page}:per-page-${perPage}:format-${format.toLowerCase()}:type-${type.toLowerCase()}:status-${status?.toLowerCase()}:sort-${sort?.toLowerCase()}:releasedOnLastXDays-${releasedOnLastXDays}:season-${season?.toLowerCase()}:seasonYear-${seasonYear}:showAdultContent-${showAdultContent}`;
 
         const value = await redisClient.get(key);
 
@@ -95,24 +95,22 @@ exports.mediasByParamsOnAnilist = expressAsyncHandler(async (req, res) => {
             },
         };
 
-        await fetch(ANILIST_MEDIA_INFO_URI, fetchOptions({ graphqlQuery, authToken: req.query.authToken }))
-            .then(response => response.json())
-            .then(data => {
+        const response = await fetch(
+            ANILIST_MEDIA_INFO_URI,
+            fetchOptions({ graphqlQuery, authToken: req.query.authToken })
+        );
+        const data = await response.json();
 
-                if (!data.data) {
-                    return res.status(data.errors[0].status).json(data.errors)
-                }
+        if (!response.ok || !data.data) {
+            console.error("AniList upstream request failed:", data.errors || response.status);
+            return res.status(502).json({ error: "AniList upstream request failed" });
+        }
 
-                results = data.data.Page?.media || data.data.Page?.mediaTrends || data.data.Page?.airingSchedules || [];
+        results = data.data.Page?.media || data.data.Page?.mediaTrends || data.data.Page?.airingSchedules || [];
 
-                if (results.length === 0) {
-                    return res.status(404).json({ message: "No results found", results: results });
-                }
-            })
-            .catch(err => {
-                console.error("Error fetching data from Anilist API:", err);
-                return res.status(500).json({ error: "Internal Server Error" });
-            });
+        if (!Array.isArray(results) || results.length === 0) {
+            return res.status(404).json({ message: "No results found", results: [] });
+        }
 
         await setRedisKey({ redisClient, key, data: results });
 
