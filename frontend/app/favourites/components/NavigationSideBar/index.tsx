@@ -1,87 +1,50 @@
 "use client";
 import Link from "next/link";
-import React, { useLayoutEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import styles from "./component.module.css";
-import { getAuth } from "firebase/auth";
-import { useAuthState } from "react-firebase-hooks/auth";
-import { doc, getDoc, getFirestore } from "firebase/firestore";
-import { initFirebase } from "@/app/firebaseApp";
-import { useAppSelector } from "@/app/lib/redux/hooks";
-import { BookmarkItem } from "@/app/ts/interfaces/firestoreData";
+import { useAuth } from "@/app/lib/auth/AuthProvider";
+import { getAccountData } from "@/app/lib/railwayApi";
 
 function NavigationSideBar({ params }: { params?: { format: string } }) {
   const [currParams, setCurrParams] = useState("");
-  const [bookmarksMediaTypesQuantity, setBookmarksMediaTypesQuantity] =
-    useState<{ all: number; anime: number; manga: number; movie: number }>();
+  const [counts, setCounts] = useState<{ all: number; anime: number; manga: number; movie: number }>();
+  const { user, loading } = useAuth();
 
-  const anilistUser = useAppSelector((state) => state.UserInfo.value);
-
-  const auth = getAuth();
-  const [user, loading] = useAuthState(auth);
-
-  const db = getFirestore(initFirebase());
-
-  useLayoutEffect(() => {
-    if (!loading && (user || anilistUser)) getUserBookmarks();
-
+  useEffect(() => {
     setCurrParams(params?.format || "");
-  }, [loading, params]);
+  }, [params?.format]);
 
-  async function getUserBookmarks() {
-    const bookmarksList: BookmarkItem[] = await getDoc(
-      doc(db, "users", user?.uid || `${anilistUser?.id}`)
-    ).then((doc) => doc.get("bookmarks"));
-
-    setBookmarksMediaTypesQuantity({
-      all: bookmarksList.length,
-      anime: bookmarksList.filter((media) => media.format == "TV").length,
-      manga: bookmarksList.filter((media) => media.format == "MANGA").length,
-      movie: bookmarksList.filter((media) => media.format == "MOVIE").length,
-    });
-  }
+  useEffect(() => {
+    let active = true;
+    if (loading || !user) {
+      setCounts(undefined);
+      return;
+    }
+    getAccountData().then((data) => {
+      if (!active) return;
+      const bookmarks = data.bookmarks || [];
+      setCounts({
+        all: bookmarks.length,
+        anime: bookmarks.filter((media: any) => media.format === "TV").length,
+        manga: bookmarks.filter((media: any) => media.format === "MANGA").length,
+        movie: bookmarks.filter((media: any) => media.format === "MOVIE").length,
+      });
+    }).catch(() => { if (active) setCounts(undefined); });
+    return () => { active = false; };
+  }, [user, loading]);
 
   return (
-    <React.Fragment>
+    <>
       <p>FORMAT</p>
-
       <nav id={styles.nav_container}>
         <ul>
-          <li data-active={currParams == ""}>
-            <Link href={`/favourites`}>
-              All{" "}
-              {bookmarksMediaTypesQuantity && (
-                <span>({bookmarksMediaTypesQuantity.all})</span>
-              )}
-            </Link>
-          </li>
-          <li data-active={currParams == "tv"}>
-            <Link href={`?format=tv`}>
-              Animes{" "}
-              {bookmarksMediaTypesQuantity && (
-                <span>({bookmarksMediaTypesQuantity.anime})</span>
-              )}
-            </Link>
-          </li>
-          <li data-active={currParams == "manga"}>
-            <Link href={`?format=manga`}>
-              Mangas{" "}
-              {bookmarksMediaTypesQuantity && (
-                <span>({bookmarksMediaTypesQuantity.manga})</span>
-              )}
-            </Link>
-          </li>
-          <li data-active={currParams == "movie"}>
-            <Link href={`?format=movie`}>
-              Movies{" "}
-              {bookmarksMediaTypesQuantity && (
-                <span>({bookmarksMediaTypesQuantity.movie})</span>
-              )}
-            </Link>
-          </li>
+          <li data-active={currParams === ""}><Link href="/favourites">All {counts && <span>({counts.all})</span>}</Link></li>
+          <li data-active={currParams === "tv"}><Link href="?format=tv">Animes {counts && <span>({counts.anime})</span>}</Link></li>
+          <li data-active={currParams === "manga"}><Link href="?format=manga">Mangas {counts && <span>({counts.manga})</span>}</Link></li>
+          <li data-active={currParams === "movie"}><Link href="?format=movie">Movies {counts && <span>({counts.movie})</span>}</Link></li>
         </ul>
       </nav>
-    </React.Fragment>
+    </>
   );
 }
-
 export default NavigationSideBar;
