@@ -38,7 +38,7 @@ function publicUser(row) {
     id: row.id,
     uid: row.id,
     email: row.email,
-    displayName: row.username,
+    displayName: row.data?.displayName || row.username,
     photoURL: row.data?.photoURL || null,
     data: row.data || {}
   };
