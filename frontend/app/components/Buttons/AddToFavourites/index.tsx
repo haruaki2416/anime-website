@@ -34,3 +34,8 @@ export function Button({ mediaInfo, children, svgOnlyColor, isActiveOnAnilist, c
     {isLoading ? <LoadingSvg width={16} height={16} /> : wasAddedToFavourites ? (children ? children[1] : <><FavouriteFillSvg width={16} height={16} fill={svgOnlyColor || "var(--brand-color)"} /> FAVOURITED</>) : (children ? children[0] : <><FavouriteSvg width={16} height={16} fill={svgOnlyColor || "var(--white-100)"} /> FAVOURITE</>)}
   </motion.button>;
 }
+
+
+export function SvgIcon({ children }: { children: React.ReactNode }) {
+  return <span aria-hidden="true">{children}</span>;
+}
