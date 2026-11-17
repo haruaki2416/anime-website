@@ -10,8 +10,7 @@ import {
   MediaData,
 } from "@/app/ts/interfaces/anilistMediaData";
 import anilist from "@/app/api/anilist/anilistMedias";
-import { useAuthState } from "react-firebase-hooks/auth";
-import { getAuth } from "firebase/auth";
+import { useAuth } from "@/app/lib/auth/AuthProvider";
 import { getUserAdultContentPreference } from "@/app/lib/user/userDocFetchOptions";
 
 export const revalidate = 1800; // revalidate the data every 30 min
@@ -33,8 +32,7 @@ function NewestMediaSection({
     boolean | null
   >(null);
 
-  const auth = getAuth();
-  const [user] = useAuthState(auth);
+  const { user } = useAuth();
 
   useEffect(() => {
     if (!initialAnimesList[0]) {
@@ -53,7 +51,7 @@ function NewestMediaSection({
     if (isAdultContentSetToShow) return isAdultContentSetToShow;
 
     const userAdultContentPreference: boolean =
-      await getUserAdultContentPreference(user.uid);
+      await getUserAdultContentPreference();
 
     setIsAdultContentSetToShow(userAdultContentPreference);
 
