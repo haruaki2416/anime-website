@@ -8,8 +8,7 @@ import LoadingIcon from "@/public/assets/ripple-1s-200px.svg";
 import SearchIcon from "@/public/assets/search.svg";
 import CloseSvg from "@/public/assets/x.svg";
 import { AnimatePresence, motion } from "framer-motion";
-import { useAuthState } from "react-firebase-hooks/auth";
-import { getAuth } from "firebase/auth";
+import { useAuth } from "@/app/lib/auth/AuthProvider";
 import { MediaOnJSONFile } from "@/app/ts/interfaces/jsonMediaData";
 import { getUserAdultContentPreference } from "@/app/lib/user/userDocFetchOptions";
 import { useAppSelector } from "@/app/lib/redux/hooks";
@@ -48,8 +47,7 @@ function SearchFormContainer() {
 
   const [searchInputValue, setSearchInputValue] = useState<string>("");
 
-  const auth = getAuth();
-  const [user] = useAuthState(auth);
+  const { user } = useAuth();
 
   const anilistUser = useAppSelector((state) => state.UserInfo.value);
 
