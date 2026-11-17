@@ -64,6 +64,10 @@ function HeroCarousel({
 
   const currMediaOnScreenIndex = wrap(0, animesList.length, page);
 
+  if (!Array.isArray(animesList) || animesList.length === 0) {
+    return <section id={styles.hero_section_container} aria-label="Featured anime" />;
+  }
+
   const paginate = (newDirection: number) => {
     setPage([page + newDirection, newDirection]);
   };
