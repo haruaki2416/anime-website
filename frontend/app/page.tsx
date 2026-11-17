@@ -53,10 +53,10 @@ export default async function Home() {
     : undefined;
 
   // section 3
-  const listAnimesTrending = (await anilist.getMediaForThisFormat({
+  const listAnimesTrending = ((await anilist.getMediaForThisFormat({
     type: "ANIME",
     accessToken: userAuthorization,
-  })) as MediaData[];
+  })) || []) as MediaData[];
 
   // section 1
   const listAnimesTrendingWithBackground = listAnimesTrending.filter(
@@ -64,7 +64,7 @@ export default async function Home() {
   );
 
   // section 2
-  const listAnimesReleasingByPopularity = await anilist
+  const listAnimesReleasingByPopularity = (await anilist
     .getNewReleases({
       type: "ANIME",
       showAdultContent: false,
@@ -72,25 +72,24 @@ export default async function Home() {
       page: 1,
       perPage: 12,
       accessToken: userAuthorization,
-    })
-    .then((res) => res as MediaData[]);
+    })) || [];
 
   // section 3
-  const listMediasToBannerSection = await anilist
+  const listMediasToBannerSection = ((await anilist
     .getMediaForThisFormat({
       type: "ANIME",
       sort: "SCORE_DESC",
       accessToken: userAuthorization,
     })
     .then((res) =>
-      (res as MediaData[]).filter((item) => item.isAdult == false)
-    );
+      ((res as MediaData[]) || []).filter((item) => item.isAdult == false)
+    )) || [];
 
   const randomIndexForBannerSection =
-    Math.floor(Math.random() * (listMediasToBannerSection?.length || 10)) + 1;
+    Math.floor(Math.random() * listMediasToBannerSection.length);
 
   // section 4 data
-  const listMediasReleasedToday = await anilist
+  const listMediasReleasedToday = ((await anilist
     .getReleasingByDaysRange({
       type: "ANIME",
       days: 0,
@@ -98,11 +97,11 @@ export default async function Home() {
       accessToken: userAuthorization,
     })
     .then((res) =>
-      (res as AiringMediaResult[])
+      ((res as AiringMediaResult[]) || [])
         .sort((a, b) => a.media.popularity - b.media.popularity)
         .reverse()
     )
-    .then((res) => res.map((item) => item.media));
+    .then((res) => res.map((item) => item.media))) || [];
 
   return (
     <main id={styles.container} className={styles.main}>
@@ -130,6 +129,7 @@ export default async function Home() {
       </section>
 
       {/* SECTION => Media Banner With Trailer Embeded  */}
+      {listMediasToBannerSection.length > 0 && (
       <section
         id={styles.media_banner_container}
         style={{
@@ -197,6 +197,7 @@ export default async function Home() {
           </div>
         </div>
       </section>
+      )}
 
       {/* SECTION => SHOWS MEDIAS SORTED BY FAVOURITES */}
       <section
